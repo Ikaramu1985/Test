@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🧪 Exam System - Multiple Choice & True/False Quiz</title>
+  <style>
+    /* Reset & base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 20px 30px;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    main {
+      flex-grow: 1;
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 30px;
+    }
+    button {
+      cursor: pointer;
+      background-color: #2980b9;
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+      margin-top: 12px;
+    }
+    button:hover:not(:disabled) {
+      background-color: #3498db;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 15px;
+    }
+    input[type="text"], input[type="password"], input[type="number"], textarea, select {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      resize: vertical;
+      font-family: inherit;
+    }
+    textarea {
+      min-height: 60px;
+    }
+    .nav-buttons {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .nav-buttons button {
+      margin: 0 10px;
+      min-width: 140px;
+    }
+    .section {
+      display: none;
+      animation: fadeIn 0.5s ease forwards;
+    }
+    .visible {
+      display: block;
+    }
+    h3 {
+      border-bottom: 2px solid #2980b9;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .error-msg {
+      color: #e74c3c;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+    ul#questionList {
+      list-style-type: decimal;
+      padding-left: 20px;
+      margin-top: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px 20px;
+      background: #fafafa;
+    }
+    ul#questionList li {
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    ul#questionList li:last-child {
+      border-bottom: none;
+    }
+    #quizForm .question {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    #quizForm label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: block;
+      color: #34495e;
+    }
+    #timer {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: #e67e22;
+      text-align: right;
+    }
+    #result {
+      margin-top: 25px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+    }
+    #result h4 {
+      margin: 10px 0;
+    }
+    footer {
+      text-align: center;
+      padding: 15px;
+      background-color: #2c3e50;
+      color: #ddd;
+      font-size: 0.9rem;
+      margin-top: auto;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  🧪 Interactive Exam & Quiz System
+</header>
+
+<main>
+
+  <div class="nav-buttons">
+    <button onclick="showSection('examinerLogin')">Examiner Login</button>
+    <button onclick="showSection('studentLogin')">Student Quiz</button>
+  </div>
+
+  <!-- Examiner Login -->
+  <section id="examinerLogin" class="section visible" aria-label="Examiner Login Section">
+    <h3>🔐 Examiner Login</h3>
+    <label for="examinerPwd">Enter Examiner Password:</label>
+    <input type="password" id="examinerPwd" autocomplete="current-password" aria-required="true" />
+    <button onclick="verifyExaminer()">Login</button>
+    <p id="examinerError" class="error-msg" role="alert" aria-live="assertive"></p>
+  </section>
+
+  <!-- Examiner Interface -->
+  <section id="examiner" class="section" aria-label="Examiner Interface Section">
+    <h3>Examiner Interface - Setup Quiz</h3>
+    <label for="duration">Quiz Duration (minutes):</label>
+    <input type="number" id="duration" min="1" max="180" placeholder="E.g., 30" aria-required="true" />
+
+    <label for="passMark">Pass Mark (%):</label>
+    <input type="number" id="passMark" min="0" max="100" placeholder="E.g., 50" aria-required="true" />
+
+    <label for="quizPassword">Set Quiz Password (for students):</label>
+    <input type="password" id="quizPassword" aria-required="true" />
+
+    <hr style="margin: 25px 0; border-color: #ddd;" />
+
+    <label for="questionType">Select Question Type:</label>
+    <select id="questionType" onchange="updateQuestionFields()" aria-required="true">
+      <option value="" disabled selected>Choose question type</option>
+      <option value="multipleChoice">Multiple Choice</option>
+      <option value="trueFalse">True / False</option>
+    </select>
+
+    <label for="newQuestion">Enter Question:</label>
+    <textarea id="newQuestion" placeholder="Type your question here..." aria-required="true"></textarea>
+
+    <!-- Multiple Choice Options -->
+    <div id="mcOptions" style="display:none;">
+      <label>Option A:</label>
+      <input type="text" id="optionA" placeholder="Option A" />
+      <label>Option B:</label>
+      <input type="text" id="optionB" placeholder="Option B" />
+      <label>Option C:</label>
+      <input type="text" id="optionC" placeholder="Option C" />
+      <label>Option D:</label>
+      <input type="text" id="optionD" placeholder="Option D" />
+      <label for="correctAnswerMC">Correct Answer (A, B, C, or D):</label>
+      <input type="text" id="correctAnswerMC" maxlength="1" placeholder="E.g., B" />
+    </div>
+
+    <!-- True/False Options -->
+    <div id="tfOptions" style="display:none;">
+      <label for="correctAnswerTF">Correct Answer:</label>
+      <select id="correctAnswerTF">
+        <option value="True">True</option>
+        <option value="False">False</option>
+      </select>
+    </div>
+
+    <button onclick="addQuestion()">Add Question</button>
+
+    <h4>📋 Added Questions</h4>
+    <ul id="questionList" aria-live="polite" aria-relevant="additions"></ul>
+  </section>
+
+  <!-- Student Login -->
+  <section id="studentLogin" class="section" aria-label="Student Quiz Login Section">
+    <h3>🎓 Student Access</h3>
+    <label for="studentPassword">Enter Quiz Password:</label>
+    <input type="password" id="studentPassword" autocomplete="off" aria-required="true" />
+    <button onclick="verifyStudent()">Start Quiz</button>
+    <p id="studentError" class="error-msg" role="alert" aria-live="assertive"></p>
+  </section>
+
+  <!-- Student Quiz -->
+  <section id="student" class="section" aria-label="Student Quiz Section">
+    <h3>Quiz</h3>
+    <p id="timer" aria-live="polite" aria-atomic="true"></p>
+    <form id="quizForm" aria-label="Quiz Questions Form"></form>
+    <button onclick="submitQuiz()">Submit</button>
+    <div id="result" role="alert" aria-live="assertive"></div>
+  </section>
+
+</main>
+
+<footer>
+  Developed by ChatGPT - Interactive Quiz System
+</footer>
+
+<script>
+  // Variables
+  const examinerPassword = "exam123"; // Set your examiner password here
+  let quizPassword = "";
+  let passMark = 50;
+  let duration = 10; // minutes
+  let questions = [];
+  let quizTimer;
+  let timeRemaining;
+  let studentAnswers = [];
+
+  // Show a section by ID, hide others
+  function showSection(id) {
+    document.querySelectorAll("main .section").forEach(s => s.classList.remove("visible"));
+    document.getElementById(id).classList.add("visible");
+    clearInterval(quizTimer);
+    if (id === "student") {
+      // Prepare timer display and start if needed
+      if (timeRemaining === undefined) {
+        timeRemaining = duration * 60;
+        startTimer();
+      }
+    } else {
+      timeRemaining = undefined;
+      document.getElementById("timer").textContent = "";
+      document.getElementById("result").textContent = "";
+    }
+  }
+
+  // Verify Examiner Login
+  function verifyExaminer() {
+    const pwd = document.getElementById("examinerPwd").value.trim();
+    const err = document.getElementById("examinerError");
+    if (pwd === examinerPassword) {
+      err.textContent = "";
+      showSection("examiner");
+      resetExaminerFields();
+    } else {
+      err.textContent = "Incorrect examiner password.";
+    }
+  }
+
+  // Reset Examiner Fields for new session
+  function resetExaminerFields() {
+    document.getElementById("duration").value = "";
+    document.getElementById("passMark").value = "";
+    document.getElementById("quizPassword").value = "";
+    document.getElementById("questionType").selectedIndex = 0;
+    document.getElementById("newQuestion").value = "";
+    document.getElementById("optionA").value = "";
+    document.getElementById("optionB").value = "";
+    document.getElementById("optionC").value = "";
+    document.getElementById("optionD").value = "";
+    document.getElementById("correctAnswerMC").value = "";
+    document.getElementById("correctAnswerTF").value = "True";
+    document.getElementById("mcOptions").style.display = "none";
+    document.getElementById("tfOptions").style.display = "none";
+    questions = [];
+    updateQuestionList();
+  }
+
+  // Update question fields based on question type
+  function updateQuestionFields() {
+    const qType = document.getElementById("questionType").value;
+    if (qType === "multipleChoice") {
+      document.getElementById("mcOptions").style.display = "block";
+      document.getElementById("tfOptions").style.display = "none";
+    } else if (qType === "trueFalse") {
+      document.getElementById("mcOptions").style.display = "none";
+      document.getElementById("tfOptions").style.display = "block";
+    } else {
+      document.getElementById("mcOptions").style.display = "none";
+      document.getElementById("tfOptions").style.display = "none";
+    }
+  }
+
+  // Add question to list
+  function addQuestion() {
+    const qType = document.getElementById("questionType").value;
+    const questionText = document.getElementById("newQuestion").value.trim();
+
+    if (!qType) {
+      alert("Please select a question type.");
+      return;
+    }
+    if (!questionText) {
+      alert("Please enter the question text.");
+      return;
+    }
+
+    if (qType === "multipleChoice") {
+      // Validate MC options
+      const A = document.getElementById("optionA").value.trim();
+      const B = document.getElementById("optionB").value.trim();
+      const C = document.getElementById("optionC").value.trim();
+      const D = document.getElementById("optionD").value.trim();
+      const correct = document.getElementById("correctAnswerMC").value.trim().toUpperCase();
+
+      if (!A || !B || !C || !D) {
+        alert("Please fill in all four options for multiple choice.");
+        return;
+      }
+      if (!["A", "B", "C", "D"].includes(correct)) {
+        alert("Correct answer must be A, B, C, or D.");
+        return;
+      }
+      // Save question
+      questions.push({
+        type: "multipleChoice",
+        question: questionText,
+        options: { A, B, C, D },
+        correctAnswer: correct
+      });
+    } else if (qType === "trueFalse") {
+      const correctTF = document.getElementById("correctAnswerTF").value;
+      questions.push({
+        type: "trueFalse",
+        question: questionText,
+        correctAnswer: correctTF
+      });
+    }
+
+    // Clear fields
+    document.getElementById("newQuestion").value = "";
+    document.getElementById("optionA").value = "";
+    document.getElementById("optionB").value = "";
+    document.getElementById("optionC").value = "";
+    document.getElementById("optionD").value = "";
+    document.getElementById("correctAnswerMC").value = "";
+    document.getElementById("correctAnswerTF").value = "True";
+
+    updateQuestionList();
+  }
+
+  // Update question list display
+  function updateQuestionList() {
+    const list = document.getElementById("questionList");
+    list.innerHTML = "";
+    questions.forEach((q, i) => {
+      let desc = `${i + 1}. ${q.question} [${q.type === "multipleChoice" ? "MC" : "True/False"}]`;
+      list.innerHTML += `<li>${desc}</li>`;
+    });
+  }
+
+  // Verify student quiz password
+  function verifyStudent() {
+    const pwd = document.getElementById("studentPassword").value.trim();
+    const err = document.getElementById("studentError");
+
+    if (!quizPassword) {
+      err.textContent = "Quiz has not been set up yet. Please contact the examiner.";
+      return;
+    }
+    if (pwd === quizPassword) {
+      err.textContent = "";
+      if (questions.length === 0) {
+        alert("No questions available for this quiz.");
+        return;
+      }
+      showSection("student");
+      prepareQuiz();
+    } else {
+      err.textContent = "Incorrect quiz password.";
+    }
+  }
+
+  // Prepare quiz for student
+  function prepareQuiz() {
+    // Get duration and pass mark values from examiner inputs
+    duration = Number(document.getElementById("duration").value) || 10;
+    passMark = Number(document.getElementById("passMark").value) || 50;
+    quizPassword = document.getElementById("quizPassword").value;
+
+    // Reset timer & answers
+    timeRemaining = duration * 60;
+    studentAnswers = new Array(questions.length).fill(null);
+
+    // Build quiz form questions
+    const form = document.getElementById("quizForm");
+    form.innerHTML = "";
+
+    questions.forEach((q, index) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.setAttribute("aria-label", `Question ${index + 1}`);
+
+      const qLabel = document.createElement("label");
+      qLabel.textContent = `Q${index + 1}: ${q.question}`;
+      div.appendChild(qLabel);
+
+      if (q.type === "multipleChoice") {
+        // Create radio buttons for each option
+        for (const opt of ["A", "B", "C", "D"]) {
+          const optionText = q.options[opt];
+          const optionId = `q${index}_${opt}`;
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = `q${index}`;
+          radio.id = optionId;
+          radio.value = opt;
+          radio.setAttribute("aria-label", `Option ${opt}: ${optionText}`);
+          radio.required = true;
+
+          const label = document.createElement("label");
+          label.htmlFor = optionId;
+          label.textContent = `${opt}: ${optionText}`;
+
+          div.appendChild(radio);
+          div.appendChild(label);
+          div.appendChild(document.createElement("br"));
+        }
+      } else if (q.type === "trueFalse") {
+        // Create True/False radio buttons
+        ["True", "False"].forEach(val => {
+          const optionId = `q${index}_${val}`;
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = `q${index}`;
+          radio.id = optionId;
+          radio.value = val;
+          radio.setAttribute("aria-label", val);
+          radio.required = true;
+
+          const label = document.createElement("label");
+          label.htmlFor = optionId;
+          label.textContent = val;
+
+          div.appendChild(radio);
+          div.appendChild(label);
+          div.appendChild(document.createElement("br"));
+        });
+      }
+
+      form.appendChild(div);
+    });
+
+    startTimer();
+  }
+
+  // Timer countdown
+  function startTimer() {
+    const timerEl = document.getElementById("timer");
+    if (quizTimer) clearInterval(quizTimer);
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+
+    timerEl.textContent = `Time Remaining: ${formatTime(timeRemaining)}`;
+
+    quizTimer = setInterval(() => {
+      timeRemaining--;
+      timerEl.textContent = `Time Remaining: ${formatTime(timeRemaining)}`;
+      if (timeRemaining <= 0) {
+        clearInterval(quizTimer);
+        alert("Time is up! Submitting quiz automatically.");
+        submitQuiz();
+      }
+    }, 1000);
+  }
+
+  // Submit quiz and calculate score
+  function submitQuiz() {
+    clearInterval(quizTimer);
+
+    const form = document.getElementById("quizForm");
+    const resultEl = document.getElementById("result");
+
+    // Collect answers and check correctness
+    let correctCount = 0;
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const selected = form[`q${i}`].value;
+      studentAnswers[i] = selected;
+
+      if (selected === q.correctAnswer) {
+        correctCount++;
+      }
+    }
+
+    const percent = ((correctCount / questions.length) * 100).toFixed(1);
+    const passed = percent >= passMark;
+
+    // Show result summary
+    resultEl.innerHTML = `
+      <h4>Quiz Completed</h4>
+      <p>Score: ${correctCount} out of ${questions.length}</p>
+      <p>Percentage: ${percent}%</p>
+      <p>Status: <strong style="color:${passed ? "green" : "red"}">${passed ? "Passed" : "Failed"}</strong></p>
+    `;
+
+    // Disable submit button
+    document.querySelector("#student button").disabled = true;
+  }
+</script>
+
+</body>
+</html>
